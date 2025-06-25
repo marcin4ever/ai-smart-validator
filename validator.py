@@ -5,9 +5,20 @@ import json
 
 load_dotenv()
 
+# Streamlit secrets, then env variable
+
+
+def get_api_key():
+    try:
+        import streamlit as st
+        return st.secrets["GROQ_API_KEY"]
+    except Exception:
+        return os.getenv("GROQ_API_KEY")
+
+
 headers = {
     "Content-Type": "application/json",
-    "Authorization": f"Bearer {os.getenv('GROQ_API_KEY')}"
+    "Authorization": f"Bearer {get_api_key()}"
 }
 
 # Field label mapping
