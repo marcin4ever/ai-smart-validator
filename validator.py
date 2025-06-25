@@ -1,3 +1,4 @@
+import streamlit as st
 import requests
 from dotenv import load_dotenv
 import os
@@ -7,13 +8,21 @@ load_dotenv()
 
 # Streamlit secrets, then env variable
 
+key_source = ""
+
 
 def get_api_key():
-    try:
-        import streamlit as st
+    global key_source
+    if "GROQ_API_KEY" in st.secrets:
+        key_source = "➤ Using key from Streamlit secrets"
         return st.secrets["GROQ_API_KEY"]
-    except Exception:
+    elif os.getenv("GROQ_API_KEY"):
+        key_source = "⚠️ Using key from OS environment"
         return os.getenv("GROQ_API_KEY")
+    else:
+        key_source = "❌ GROQ_API_KEY not found in secrets or environment"
+        st.error(key_source)
+        st.stop()
 
 
 headers = {
@@ -56,7 +65,7 @@ Your task:
 - Identify any inconsistency or invalid value.
 - Use logical reasoning to explain if the record is valid or not.
 
-Respond in this JSON format:
+Respond ONLY in **valid JSON**, exactly in this format:
 {{
   "record_id": {idx},
   "llm_reasoning": "...",
@@ -98,4 +107,4 @@ Respond in this JSON format:
                 "status": f"Error: {str(e)}"
             })
 
-    return results
+    return results, key_source
