@@ -51,11 +51,34 @@ def label_record(record):
     }
 
 
-def validate_data(records: list):
+def validate_data(records: list, extra_rules=None):
     results = []
     for idx, record in enumerate(records):
         labeled = label_record(record)
-        prompt = f"""
+        if extra_rules:
+            prompt = f"""
+You are a smart validator of SAP warehouse records.
+
+Use the following additional rules as a reference that you have to take into account:
+{extra_rules}
+
+Here is a record:
+{json.dumps(labeled, indent=2)}
+
+Your task:
+- Identify any inconsistency or invalid value.
+- Use logical reasoning to explain if the record is valid or not.
+- Do NOT reference rule numbers.
+
+Respond ONLY in **valid JSON**, exactly in this format:
+{{
+  "record_id": {idx},
+  "llm_reasoning": "...",
+  "status": "OK" or "Error"
+}}
+"""
+        else:
+            prompt = f"""
 You are a smart validator of SAP warehouse records.
 
 Here is a record:
