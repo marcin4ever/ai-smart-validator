@@ -54,8 +54,7 @@ if uploaded_file:
                     st.markdown(f"### Item #{idx}")
                     st.write("⬛ Status:", result["status"])
                     st.write("⬛ Explanation:")
-                    st.code(result["llm_reasoning"]
-                            or "No response", language="markdown")
+                    st.write(result.get("llm_reasoning", "No response"))
         else:
             st.error("The JSON file must contain a list of records.")
     except Exception as e:
