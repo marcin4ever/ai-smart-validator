@@ -1,33 +1,28 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from validator import validate_data
-import json
+from typing import Any
+from validator import validate_data, key_source
 
 app = FastAPI()
 
+# Allow requests from React frontend 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-@app.get("/")
-def read_root():
-    return {"message": "AI Smart Validator is alive and active"}
-
-
-@app.get("/health")
-def health_check():
-    return {"status": "OK"}
-
-
-class InputData(BaseModel):
-    record_id: int
-    value: str
-
+# Input model for POST request
+class RecordInput(BaseModel):
+    records: Any
 
 @app.post("/validate")
-def validate():
-    try:
-        with open("./test_data/mock_data_extended_5.json") as f:
-            data = json.load(f)
-    except FileNotFoundError:
-        return {"error": "mock_data_extended_10.json not found."}
-
-    result = validate_data(data)
-    return {"validation_result": result}
+async def validate(input: RecordInput):
+    results, ks = validate_data(input.records, extra_rules=None)
+    return {
+        "results": results,
+        "key_source": ks
+    }
