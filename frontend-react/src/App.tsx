@@ -46,10 +46,10 @@ function App() {
             });
             const resData = response.data;
 
-            const okCount = resData.filter((r: any) => r.status === 'OK').length;
-            setResults(resData);
-            setSummary({ ok: okCount, error: resData.length - okCount });
-            setKeySource(response.headers['x-key-source'] || 'API');
+            const okCount = resData.results.filter((r: any) => r.status === 'OK').length;
+            setResults(resData.results);
+            setSummary({ ok: okCount, error: resData.results.length - okCount });
+            setKeySource(resData.key_source || 'API Unknown');
         } catch (error) {
             console.error('Validation failed:', error);
         } finally {

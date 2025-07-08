@@ -27,7 +27,10 @@ def validate():
         with open("./test_data/mock_data_extended_5.json") as f:
             data = json.load(f)
     except FileNotFoundError:
-        return {"error": "mock_data_extended_10.json not found."}
+        return {"error": "mock_data_extended_5.json not found."}
 
-    result = validate_data(data)
-    return {"validation_result": result}
+    results, ks = validate_data(data, use_rag=False)   
+    return {
+        "results": results,
+        "key_source": ks
+    }

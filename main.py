@@ -18,10 +18,11 @@ app.add_middleware(
 # Input model for POST request
 class RecordInput(BaseModel):
     records: Any
+    use_rag: bool
 
 @app.post("/validate")
 async def validate(input: RecordInput):
-    results, ks = validate_data(input.records, extra_rules=None)
+    results, ks = validate_data(records=input.records, use_rag=input.use_rag)
     return {
         "results": results,
         "key_source": ks
