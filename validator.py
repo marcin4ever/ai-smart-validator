@@ -51,7 +51,13 @@ def label_record(record):
     }
 
 
-def validate_data(records: list, extra_rules=None):
+def validate_data(records: list, use_rag: bool = False):
+    extra_rules = None
+    if use_rag:
+        try:
+            extra_rules = Path("rules/validation_rules.md").read_text(encoding="utf-8")
+        except Exception as e:
+            extra_rules = f"[ERROR: Failed to load rules - {e}]"
     results = []
     for idx, record in enumerate(records):
         labeled = label_record(record)

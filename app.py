@@ -23,23 +23,16 @@ if uploaded_file:
             run_rag = col2.button("Run with RAG WM Rules")
 
             if run_basic or run_rag:
-                rules_text = ""
-                if run_rag:
-                    try:
-                        rules_text = Path(
-                            "rules/validation_rules.md").read_text(encoding="utf-8")
-                    except Exception as e:
-                        st.warning(f"⚠️ Failed to load rules: {e}")
 
                 if run_basic:
                     with st.spinner("Validating..."):
                         results, key_source = validate_data(
-                            records, extra_rules=None)
+                            records, use_rag=None)
                     st.success("✔️ >>> Validation complete <<< ")
                 if run_rag:
                     with st.spinner("Validating with RAG rules..."):
                         results, key_source = validate_data(
-                            records, extra_rules=rules_text)
+                            records, use_rag=True)
                     st.success("✔️ >>> RAG Validation complete <<< ")
 
                 st.info(f"{key_source}")  # which API source was used
@@ -53,7 +46,7 @@ if uploaded_file:
                 for idx, result in enumerate(results, start=1):
                     st.markdown(f"### Item #{idx}")
                     st.write("⬛ Status:", result["status"])
-                    st.write("⬛ Explanation:")
+                    st.write("⬛ Reason:")
                     st.write(result.get("llm_reasoning", "No response"))
         else:
             st.error("The JSON file must contain a list of records.")
