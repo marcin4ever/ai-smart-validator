@@ -77,7 +77,7 @@ if uploaded_file:
                 st.markdown("<hr style='border:1px solid #ccc;'/>", unsafe_allow_html=True)
 
                 for idx, result in enumerate(results, start=1):
-                    st.markdown(f"<h4>🧾 Item #{idx}</h4>", unsafe_allow_html=True)
+                    st.markdown(f"<h4>Item {idx}:</h4>", unsafe_allow_html=True)
                     status_color = "green" if result["status"] == "OK" else "red"
                     st.markdown(f"<b>Status:</b> <span style='color:{status_color}; font-weight:bold;'>{result['status']}</span>", unsafe_allow_html=True)
 
@@ -85,10 +85,9 @@ if uploaded_file:
                         score_val = round(result["score"], 1)
                         st.markdown(f"<b>Score:</b> {score_val}/10", unsafe_allow_html=True)
 
-                    st.markdown("<b>Reasoning:</b>", unsafe_allow_html=True)
                     st.markdown(f"<div style='background:#f9f9f9; padding:10px; border-left:3px solid #ddd;'>{result.get('llm_reasoning', 'No explanation')}</div>", unsafe_allow_html=True)
                     st.markdown("---")
         else:
-            st.error("❌ The JSON must contain a list of records.")
+            st.error("❌ The file must contain valid records.")
     except Exception as e:
         st.error(f"❌ Error reading file: {e}")
