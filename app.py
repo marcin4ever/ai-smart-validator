@@ -83,7 +83,7 @@ if uploaded_file:
 
                     if "score" in result:
                         score_val = round(result["score"], 1)
-                        st.markdown(f"<b>Score:</b> {score_val}/10", unsafe_allow_html=True)
+                        st.markdown(f"Score: {score_val}/10", unsafe_allow_html=True)
 
                     st.markdown(f"<div style='background:#f9f9f9; padding:10px; border-left:3px solid #ddd;'>{result.get('llm_reasoning', 'No explanation')}</div>", unsafe_allow_html=True)
                     st.markdown("---")
