@@ -75,12 +75,14 @@ Your task:
 - Identify any inconsistency or invalid value.
 - Use logical reasoning to explain if the record is valid or not.
 - Do NOT reference rule numbers.
+- Give a confidence score from 1 to 10 (decimals allowed, e.g., 8.5) reflecting how confident you are in the record’s validity.
 
 Respond ONLY in **valid JSON**, exactly in this format:
 {{
   "record_id": {idx},
   "llm_reasoning": "...",
   "status": "OK" or "Error"
+  "score": 8.5
 }}
 """
         else:
@@ -93,12 +95,14 @@ Here is a record:
 Your task:
 - Identify any inconsistency or invalid value.
 - Use logical reasoning to explain if the record is valid or not.
+- Give a confidence score from 1 to 10 (decimals allowed, e.g., 8.5) reflecting how confident you are in the record’s validity.
 
 Respond ONLY in **valid JSON**, exactly in this format:
 {{
   "record_id": {idx},
   "llm_reasoning": "...",
   "status": "OK" or "Error"
+  "score": 8.5
 }}
 """
 
@@ -120,20 +124,39 @@ Respond ONLY in **valid JSON**, exactly in this format:
         if response.status_code != 200:
             results.append({
                 "record_id": idx,
-                "llm_reasoning": None,
-                "status": f"Error: HTTP {response.status_code}, {response.text}"
+                "status": f"Error: HTTP {response.status_code}",
+                "llm_reasoning": response.text,
+                "score": None
             })
             continue
 
         try:
             llm_output = response.json()["choices"][0]["message"]["content"]
             parsed = json.loads(llm_output)
-            results.append(parsed)
+
+            status = parsed.get("status", "Error")
+            reasoning = parsed.get("llm_reasoning", "No explanation.")
+            score = parsed.get("score")
+
+            try:
+                score = round(float(score), 1)
+            except:
+                score = None
+
+            results.append({
+                "record_id": idx,
+                "status": status,
+                "llm_reasoning": reasoning,
+                "score": score
+            })
+
         except Exception as e:
             results.append({
                 "record_id": idx,
+                "status": f"Error: {str(e)}",
                 "llm_reasoning": llm_output if 'llm_output' in locals() else None,
-                "status": f"Error: {str(e)}"
+                "score": None
             })
 
     return results, key_source
+
