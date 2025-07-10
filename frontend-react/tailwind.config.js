@@ -5,7 +5,13 @@ module.exports = {
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      fontFamily: {
+        cinzel: ['Cinzel', 'serif'],
+        orbitron: ['Orbitron', 'sans-serif'],
+        titillium: ['"Titillium Web"', 'sans-serif'],
+      },
+    },
   },
   plugins: [],
 };

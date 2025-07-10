@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { ClipLoader } from 'react-spinners';
+import Header from './components/Header';
+import UploadSection from './components/UploadSection';
+import RunButtons from './components/RunButtons';
 
 interface ValidationResult {
     status: string;
@@ -15,6 +18,8 @@ function App() {
     const [summary, setSummary] = useState<{ ok: number; error: number; avgScore?: string }>({ ok: 0, error: 0 });
     const [loading, setLoading] = useState<boolean>(false);
     const [fileError, setFileError] = useState<string>('');
+    const [feedbackItemId, setFeedbackItemId] = useState<number | null>(null);
+    const [feedbackText, setFeedbackText] = useState<string>('');
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -62,16 +67,28 @@ function App() {
             });
             const resData = response.data;
 
-            const okCount = resData.results.filter((r: any) => r.status === 'OK').length;
+            const resultsWithMarked = resData.results.map((r: any) => ({
+                ...r,
+                marked: false,
+                accepted: false,
+                rejected: false,
+                retried: false,
+                feedbackSent: false,
+                emailed: false,
+                worklisted: false
+            }));
 
-            const scored = resData.results.filter((r: any) => r.score !== null && r.score !== undefined);
+            const okCount = resultsWithMarked.filter((r) => r.status === 'OK').length;
+
+            const scored = resultsWithMarked.filter((r) => r.score !== null && r.score !== undefined);
             const avgScore = scored.length > 0
-                ? (scored.reduce((sum: number, r: any) => sum + r.score, 0) / scored.length).toFixed(1)
+                ? (scored.reduce((sum, r) => sum + r.score, 0) / scored.length).toFixed(1)
                 : null;
 
-            setResults(resData.results);
-            setSummary({ ok: okCount, error: resData.results.length - okCount, avgScore: avgScore });
+            setResults(resultsWithMarked);
+            setSummary({ ok: okCount, error: resultsWithMarked.length - okCount, avgScore });
             setKeySource(resData.key_source || 'API Unknown');
+
         } catch (error) {
             console.error('Validation failed:', error);
         } finally {
@@ -79,56 +96,156 @@ function App() {
         }
     };
 
+    const toggleMarked = (recordId: number) => {
+        setResults((prevResults) =>
+            prevResults.map((r) =>
+                r.record_id === recordId ? { ...r, marked: !r.marked } : r
+            )
+        );
+    };
+
+    const handleAccept = (recordId: number) => {
+        setResults(prev =>
+            prev.map(r =>
+                r.record_id === recordId ? { ...r, accepted: !r.accepted } : r
+            )
+        );
+    };
+
+    const handleReject = (recordId: number) => {
+        setResults(prev =>
+            prev.map(r =>
+                r.record_id === recordId ? { ...r, rejected: !r.rejected } : r
+            )
+        );
+    };
+
+    const handleRetry = async (recordId: number) => {
+        const index = results.findIndex(r => r.record_id === recordId);
+        const recordToRetry = records[index];
+        if (!recordToRetry) return;
+
+        // Show “Executing…” state
+        setResults(prev =>
+            prev.map(r =>
+                r.record_id === recordId ? { ...r, retried: true } : r
+            )
+        );
+
+        try {
+            const endpoint = 'http://localhost:8000/validate';
+            const response = await axios.post(endpoint, {
+                records: [recordToRetry],
+                use_rag: false
+            });
+
+            const retried = response.data.results[0];
+
+            setResults(prev =>
+                prev.map((r, idx) =>
+                    r.record_id === recordId
+                        ? {
+                            ...retried,
+                            accepted: r.accepted,
+                            rejected: r.rejected,
+                            marked: r.marked,
+                            retried: false  // reset
+                        }
+                        : r
+                )
+            );
+        } catch (err) {
+            console.error('Retry failed:', err);
+            setResults(prev =>
+                prev.map(r =>
+                    r.record_id === recordId ? { ...r, retried: false } : r
+                )
+            );
+        }
+    };
+
+    const handleFeedbackOpen = (recordId: number) => {
+        setFeedbackItemId(recordId);
+        setFeedbackText('');
+    };
+
+    const handleFeedbackClose = () => {
+        setFeedbackItemId(null);
+        setFeedbackText('');
+    };
+
+    const handleEmail = (recordId: number) => {
+        const result = results.find(r => r.record_id === recordId);
+        if (!result) return;
+
+        const subject = `Validation Result for Item ${recordId + 1}`;
+        const body = `Status: ${result.status}
+Score: ${result.score}
+Reasoning:
+${result.llm_reasoning}`;
+
+        const html = `
+    <html>
+      <head>
+        <title>Compose Email</title>
+        <style>
+          body { font-family: sans-serif; padding: 1rem; }
+          input, textarea { width: 100%; padding: 8px; margin-bottom: 12px; border: 1px solid #ccc; border-radius: 4px; }
+          label { font-weight: bold; margin-bottom: 4px; display: block; }
+          textarea { height: 200px; resize: vertical; }
+        </style>
+      </head>
+      <body>
+        <h2>Send Email</h2>
+        <label>To:</label>
+        <input type="text" value="example@company.com" />
+        
+        <label>Cc:</label>
+        <input type="text" value="" />
+        
+        <label>Subject:</label>
+        <input type="text" value="${subject}" />
+        
+        <label>Body:</label>
+        <textarea>${body}</textarea>
+
+        <p style="margin-top: 1rem; font-style: italic; color: #666;">
+          For demo purposes only. No message will be sent.
+        </p>
+      </body>
+    </html>
+  `;
+
+        const newWindow = window.open('', '_blank', 'width=700,height=600');
+        if (newWindow) {
+            newWindow.document.write(html);
+            newWindow.document.close();
+        }
+    };
+
+    const handleWorklist = (recordId: number) => {
+        setResults(prev =>
+            prev.map(r =>
+                r.record_id === recordId ? { ...r, worklisted: true } : r
+            )
+        );
+    };
+
+
     return (
         <div className="min-h-screen bg-gray-100 py-8">
             <div className="max-w-4xl mx-auto px-4">
                 <div className="bg-white p-6 shadow rounded">
 
-
-                    <h1 className="text-2xl font-bold text-blue-700 text-center mb-2">Smart Validator via React</h1>
-                    <p className="text-center font-medium text-gray-500 mb-6">
-                        Upload your data to validate records using LLaMA 3 or Mistral 7B. (Standalone mode, no backend connected)
-                    </p>
-
-
-                    <div className="flex items-center gap-4 mb-4">
-                        <label className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-800 px-3 py-1 rounded-md border border-gray-300">
-                            Choose Your JSON File
-                            <input type="file" accept="application/json" onChange={handleFileChange} hidden />
-                        </label>
-
-                        <span className="text-gray-500 font-medium">or</span>
-
-                        <button
-                            onClick={() => loadDemoFile()}
-                            className="bg-gray-100 hover:bg-gray-200 text-gray-800 font-normal px-3 py-1 rounded-md border border-gray-300"
-                        >
-                            Use Demo Example
-                        </button>
-                    </div>
+                    <Header />
+                    <UploadSection
+                        handleFileChange={handleFileChange}
+                        loadDemoFile={loadDemoFile}
+                    />
 
                     {fileError && <p className="text-red-500 mb-2">{fileError}</p>}
 
-                    {records.length > 0 && (
-                        <>
-                            <p className="text-green-600 mb-2">Loaded {records.length} records.</p>
-                            <div className="flex gap-4 mb-4">
-                                <button
-                                    onClick={() => runValidation(false)}
-                                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-xl transition duration-200 shadow-md"
-                                >
-                                    Run Validation
-                                </button>
-                                <button
-                                    onClick={() => runValidation(true)}
-                                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-xl transition duration-200 shadow-md"
-                                >
-                                    Run with RAG WM Rules
-                                </button>
-                            </div>
-
-                        </>
-                    )}
+                    <RunButtons records={records} runValidation={runValidation} />
 
                     {loading && (
                         <div className="flex flex-col items-center mt-4 text-gray-700">
@@ -147,7 +264,7 @@ function App() {
                                     <p className="text-green-600 font-bold">✅ {summary.ok} OK</p>
                                 )}
                                 {summary.error > 0 && (
-                                    <p className="text-red-600 font-bold">❌ {summary.error} Errors</p>
+                                    <p className="text-red-600 font-bold">❌ {summary.error} {summary.error === 1 ? 'Error' : 'Errors'}</p>
                                 )}
                                 {summary.avgScore && (
                                     <p className="text-gray-600 font-medium">
@@ -161,7 +278,30 @@ function App() {
                             <hr className="mb-4" />
                             {results.map((result, idx) => (
                                 <div key={idx} className="bg-white shadow-md rounded-xl p-4 my-4 border border-gray-200">
-                                    <h3 className="font-semibold text-lg">Item {idx + 1}:</h3>
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="font-semibold text-lg">Item {idx + 1}:</h3>
+                                        <button
+                                            onClick={() => toggleMarked(result.record_id)}
+                                            className="transition transform hover:scale-110"
+                                            title={result.marked ? "Unmark" : "Mark for Review"}
+                                        >
+                                            <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                fill={result.marked ? "red" : "transparent"}
+                                                viewBox="0 0 24 24"
+                                                stroke="red"
+                                                className="w-6 h-6"
+                                            >
+                                                <path
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    strokeWidth={2}
+                                                    d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.2 3.683a1 1 0 00.95.69h3.862c.969 0 1.371 1.24.588 1.81l-3.124 2.27a1 1 0 00-.364 1.118l1.2 3.683c.3.921-.755 1.688-1.538 1.118l-3.124-2.27a1 1 0 00-1.176 0l-3.124 2.27c-.783.57-1.838-.197-1.538-1.118l1.2-3.683a1 1 0 00-.364-1.118L2.449 9.11c-.783-.57-.38-1.81.588-1.81h3.862a1 1 0 00.95-.69l1.2-3.683z"
+                                                />
+                                            </svg>
+                                        </button>
+                                    </div>
+
                                     <div className="text-sm text-gray-600 mt-1 flex gap-4 items-center flex-wrap">
                                         <span>
                                             <span className="font-semibold">Status:</span>
@@ -180,12 +320,118 @@ function App() {
                                         )}
                                     </div>
                                     <p className="mt-2 text-gray-700">{result.llm_reasoning}</p>
+                                    <div className="flex justify-start items-center gap-2 text-sm text-gray-700 border-t pt-2 mt-4 border-gray-200">
+                                        <div className="flex flex-wrap gap-2 mt-3">
+                                            <button
+                                                disabled={result.rejected}
+                                                onClick={() => handleAccept(result.record_id)}
+                                                className={
+                                                    `flex items-center gap-1 px-2 py-1 border rounded-lg shadow transition text-sm ` +
+                                                    (result.accepted
+                                                        ? 'bg-gray-200 text-gray-500'
+                                                        : result.rejected
+                                                            ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                                            : 'border-gray-300 hover:bg-green-100 hover:shadow-md')
+                                                }
+                                            >
+                                                {result.accepted ? '✅ Accepted' : '✅ Accept'}
+                                            </button>
+
+
+
+                                            <button
+                                                disabled={result.accepted}
+                                                onClick={() => handleReject(result.record_id)}
+                                                className={
+                                                    `flex items-center gap-1 px-2 py-1 border rounded-lg shadow transition text-sm ` +
+                                                    (result.rejected
+                                                        ? 'bg-red-200 text-red-800 font-semibold'
+                                                        : result.accepted
+                                                            ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                                            : 'border-gray-300 hover:bg-red-100 hover:shadow-md')
+                                                }
+                                            >
+                                                {result.rejected ? '❌ Rejected' : '❌ Reject'}
+                                            </button>
+
+                                            <button
+                                                disabled={result.accepted || result.rejected || result.retried}
+                                                onClick={() => handleRetry(result.record_id)}
+                                                className={
+                                                    `flex items-center gap-1 px-2 py-1 border rounded-lg shadow transition text-sm ` +
+                                                    ((result.accepted || result.rejected || result.retried)
+                                                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                                        : 'border-gray-300 hover:bg-blue-100 hover:shadow-md')
+                                                }
+                                            >
+                                                {result.retried ? '🔁 Executing...' : '🔁 Retry'}
+                                            </button>
+
+
+                                            <button
+                                                onClick={() => handleFeedbackOpen(result.record_id)}
+                                                className="flex items-center gap-1 px-2 py-1 border border-gray-300 rounded-lg shadow hover:bg-yellow-100 hover:shadow-md transition text-sm"
+                                            >
+                                                💬 Feedback
+                                            </button>
+
+                                            <button
+                                                onClick={() => handleEmail(result.record_id)}
+                                                className="flex items-center gap-1 px-2 py-1 border border-gray-300 rounded-lg shadow hover:bg-pink-100 hover:shadow-md transition text-sm"
+                                            >
+                                                ✉️ Email
+                                            </button>
+
+                                            <button
+                                                disabled={result.worklisted}
+                                                onClick={() => handleWorklist(result.record_id)}
+                                                className={
+                                                    `flex items-center gap-1 px-2 py-1 border rounded-lg shadow transition text-sm ` +
+                                                    (result.worklisted
+                                                        ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                                        : 'border-gray-300 hover:bg-gray-100 hover:shadow-md')
+                                                }
+                                            >
+                                                {result.worklisted ? '📋 Worklisted' : '📋 Worklist'}
+                                            </button>
+
+                                        </div>
+                                    </div>
+
                                 </div>
                             ))}
                         </div>
                     )}
                 </div>
             </div>
+            {feedbackItemId !== null && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+                    <div className="bg-white p-6 rounded-xl shadow-xl w-96">
+                        <h2 className="text-lg font-bold mb-4">Item {feedbackItemId + 1}: Your feedback will help improve future AI responses !</h2>
+                        <textarea
+                            value={feedbackText}
+                            onChange={(e) => setFeedbackText(e.target.value)}
+                            placeholder="Enter your feedback here..."
+                            className="w-full border border-gray-300 rounded-md p-2 h-32 resize-none focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        />
+                        <div className="flex justify-end gap-2 mt-4">
+                            <button
+                                onClick={handleFeedbackClose}
+                                className="px-4 py-1 text-sm bg-gray-200 hover:bg-gray-300 rounded-md"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleFeedbackClose}
+                                className="px-4 py-1 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-md"
+                            >
+                                Send
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
         </div>
     );
 }

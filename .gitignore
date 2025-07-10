@@ -3,5 +3,6 @@ __pycache__/
 venv/
 .streamlit
 .archive/
+frontend-react/src/.archive/
 LICENSE
 README.md
