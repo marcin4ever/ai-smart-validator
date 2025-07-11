@@ -71,7 +71,7 @@ function App() {
     const runValidation = async (useRag: boolean) => {
         setLoading(true);
         try {
-            const endpoint = `${import.meta.env.VITE_API_URL}/validate`
+            const endpoint = 'https://ai-smart-validator-api.onrender.com/validate';
             const response = await axios.post(endpoint, {
                 records,
                 use_rag: useRag,
