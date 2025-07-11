@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Any
 from validator import validate_data, key_source
+from typing import Optional
 
 app = FastAPI()
 
@@ -27,7 +28,9 @@ class RecordInput(BaseModel):
 @app.post("/validate")
 async def validate(input: RecordInput):
     results, ks = validate_data(
-        records=input.records, use_rag=input.use_rag, source=input.source)
+        records=input.records
+        use_rag=input.use_rag
+        source=input.source)
     return {
         "results": results,
         "key_source": ks
