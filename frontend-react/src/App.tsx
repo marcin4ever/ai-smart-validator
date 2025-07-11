@@ -71,7 +71,8 @@ function App() {
     const runValidation = async (useRag: boolean) => {
         setLoading(true);
         try {
-            const endpoint = 'https://ai-smart-validator-api.onrender.com/validate';
+            const endpoint = `${import.meta.env.VITE_API_URL}/validate`;
+            console.log('Calling API at:', endpoint);
             const response = await axios.post(endpoint, {
                 records,
                 use_rag: useRag,
@@ -147,6 +148,7 @@ function App() {
 
         try {
             const endpoint = `${import.meta.env.VITE_API_URL}/validate`;
+            console.log('Calling API for Retry at:', endpoint);
             const response = await axios.post(endpoint, {
                 records: [recordToRetry],
                 use_rag: false

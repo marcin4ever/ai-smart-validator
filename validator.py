@@ -15,6 +15,8 @@ key_source = ""
 def get_api_key(source: str = ""):
     global key_source
 
+    print(f"🔍 get_api_key called with source: {source}")
+    print("🔐 st.secrets:", st.secrets)
     if source == "react":
         key_source = "➤ React client – using default key"
         return os.getenv("GROQ_API_KEY_REACT") or os.getenv("GROQ_API_KEY")
