@@ -146,7 +146,7 @@ function App() {
         );
 
         try {
-            const endpoint = 'http://localhost:8000/validate';
+            const endpoint = `${import.meta.env.VITE_API_URL}/validate`;
             const response = await axios.post(endpoint, {
                 records: [recordToRetry],
                 use_rag: false
