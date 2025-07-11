@@ -14,19 +14,31 @@ key_source = ""
 
 def get_api_key(source: str = ""):
     global key_source
+
     if source == "react":
         key_source = "➤ React client – using default key"
         return os.getenv("GROQ_API_KEY_REACT") or os.getenv("GROQ_API_KEY")
-    elif "GROQ_API_KEY" in st.secrets:
-        key_source = "➤ Using key from Streamlit secrets"
-        return st.secrets["GROQ_API_KEY"]
-    elif os.getenv("GROQ_API_KEY"):
+
+    # Streamlit secrets block guarded to avoid crashing outside Streamlit
+    try:
+        if "GROQ_API_KEY" in st.secrets:
+            key_source = "➤ Using key from Streamlit secrets"
+            return st.secrets["GROQ_API_KEY"]
+    except Exception:
+        pass  # silently skip if not running in Streamlit
+
+    # OS env fallback
+    if os.getenv("GROQ_API_KEY"):
         key_source = "⚠️ Using key from OS environment"
         return os.getenv("GROQ_API_KEY")
-    else:
-        key_source = "❌ GROQ_API_KEY not found in secrets or environment"
+
+    # If still not found
+    key_source = "❌ GROQ_API_KEY not found in secrets or environment"
+    try:
         st.error(key_source)
         st.stop()
+    except Exception:
+        raise RuntimeError(key_source)
 
 
 headers = {
