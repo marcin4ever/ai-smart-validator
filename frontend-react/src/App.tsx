@@ -75,7 +75,8 @@ function App() {
             const response = await axios.post(endpoint, {
                 records,
                 use_rag: useRag,
-                temperature: temperature
+                temperature: temperature,
+                source: "react"
             });
             const resData = response.data;
 

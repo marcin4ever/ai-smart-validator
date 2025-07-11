@@ -11,9 +11,12 @@ load_dotenv()
 key_source = ""
 
 
-def get_api_key():
+def get_api_key(source: str = ""):
     global key_source
-    if "GROQ_API_KEY" in st.secrets:
+    if source == "react":
+        key_source = "➤ React client – using default key"
+        return os.getenv("GROQ_API_KEY_REACT") or os.getenv("GROQ_API_KEY")
+    elif "GROQ_API_KEY" in st.secrets:
         key_source = "➤ Using key from Streamlit secrets"
         return st.secrets["GROQ_API_KEY"]
     elif os.getenv("GROQ_API_KEY"):
@@ -51,11 +54,12 @@ def label_record(record):
     }
 
 
-def validate_data(records: list, use_rag: bool = False):
+def validate_data(records: list, use_rag: bool = False, source: str = ""):
     extra_rules = None
     if use_rag:
         try:
-            extra_rules = Path("rules/validation_rules.md").read_text(encoding="utf-8")
+            extra_rules = Path(
+                "rules/validation_rules.md").read_text(encoding="utf-8")
         except Exception as e:
             extra_rules = f"[ERROR: Failed to load rules - {e}]"
     results = []
@@ -159,4 +163,3 @@ Respond ONLY in **valid JSON**, exactly in this format:
             })
 
     return results, key_source
-

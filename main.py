@@ -6,7 +6,7 @@ from validator import validate_data, key_source
 
 app = FastAPI()
 
-# Allow requests from React frontend 
+# Allow requests from React frontend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173"],
@@ -16,13 +16,18 @@ app.add_middleware(
 )
 
 # Input model for POST request
+
+
 class RecordInput(BaseModel):
     records: Any
-    use_rag: bool
+    use_rag: bool,
+    source: Optional[str] = "unknown"
+
 
 @app.post("/validate")
 async def validate(input: RecordInput):
-    results, ks = validate_data(records=input.records, use_rag=input.use_rag)
+    results, ks = validate_data(
+        records=input.records, use_rag=input.use_rag, source=input.source)
     return {
         "results": results,
         "key_source": ks
