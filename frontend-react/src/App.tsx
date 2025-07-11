@@ -3,7 +3,7 @@ import axios from 'axios';
 import { ClipLoader } from 'react-spinners';
 import Header from './components/Header';
 import UploadSection from './components/UploadSection';
-import RunButtons from './components/RunButtons';
+import RunControls from './components/RunControls';
 
 interface ValidationResult {
     status: string;
@@ -20,6 +20,8 @@ function App() {
     const [fileError, setFileError] = useState<string>('');
     const [feedbackItemId, setFeedbackItemId] = useState<number | null>(null);
     const [feedbackText, setFeedbackText] = useState<string>('');
+    const [temperature, setTemperature] = useState<number>(0.7);
+    const [advancedTemp, setAdvancedTemp] = useState<boolean>(false);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -63,7 +65,8 @@ function App() {
             const endpoint = 'http://localhost:8000/validate';
             const response = await axios.post(endpoint, {
                 records,
-                use_rag: useRag
+                use_rag: useRag,
+                temperature: temperature
             });
             const resData = response.data;
 
@@ -141,19 +144,29 @@ function App() {
 
             const retried = response.data.results[0];
 
-            setResults(prev =>
-                prev.map((r, idx) =>
-                    r.record_id === recordId
-                        ? {
-                            ...retried,
-                            accepted: r.accepted,
-                            rejected: r.rejected,
-                            marked: r.marked,
-                            retried: false  // reset
-                        }
-                        : r
-                )
+            // ⬇️ Update results with the retried record
+            const updatedResults = results.map((r, idx) =>
+                r.record_id === recordId
+                    ? {
+                        ...retried,
+                        accepted: r.accepted,
+                        rejected: r.rejected,
+                        marked: r.marked,
+                        retried: false
+                    }
+                    : r
             );
+
+            // ⬇️ Recalculate summary (OK count, error count, avgScore)
+            const okCount = updatedResults.filter(r => r.status === 'OK').length;
+            const scored = updatedResults.filter(r => r.score !== null && r.score !== undefined);
+            const avgScore = scored.length > 0
+                ? (scored.reduce((sum, r) => sum + r.score!, 0) / scored.length).toFixed(1)
+                : null;
+
+            setResults(updatedResults);
+            setSummary({ ok: okCount, error: updatedResults.length - okCount, avgScore });
+
         } catch (err) {
             console.error('Retry failed:', err);
             setResults(prev =>
@@ -163,6 +176,7 @@ function App() {
             );
         }
     };
+
 
     const handleFeedbackOpen = (recordId: number) => {
         setFeedbackItemId(recordId);
@@ -233,10 +247,9 @@ ${result.llm_reasoning}`;
 
 
     return (
-        <div className="min-h-screen bg-gray-100 py-8">
+        <div className="min-h-screen bg-gradient-to-br from-slate-100 to-blue-50 py-8">
             <div className="max-w-4xl mx-auto px-4">
-                <div className="bg-white p-6 shadow rounded">
-
+                <div className="bg-white p-8 shadow-xl rounded-lg">
                     <Header />
                     <UploadSection
                         handleFileChange={handleFileChange}
@@ -245,7 +258,14 @@ ${result.llm_reasoning}`;
 
                     {fileError && <p className="text-red-500 mb-2">{fileError}</p>}
 
-                    <RunButtons records={records} runValidation={runValidation} />
+                    <RunControls
+                        records={records}
+                        runValidation={runValidation}
+                        temperature={temperature}
+                        setTemperature={setTemperature}
+                        advancedTemp={advancedTemp}
+                        setAdvancedTemp={setAdvancedTemp}
+                    />
 
                     {loading && (
                         <div className="flex flex-col items-center mt-4 text-gray-700">
@@ -310,7 +330,7 @@ ${result.llm_reasoning}`;
                                             </span>
                                         </span>
 
-                                        {result.score !== undefined && (
+                                        {result.score !== undefined && result.score !== null && (
                                             <span>
                                                 <span className="font-semibold">Score:</span>
                                                 <span className="ml-1">
