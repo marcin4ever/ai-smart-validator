@@ -71,7 +71,7 @@ function App() {
     const runValidation = async (useRag: boolean) => {
         setLoading(true);
         try {
-            const endpoint = 'http://localhost:8000/validate';
+            const endpoint = `${import.meta.env.VITE_API_URL}/validate`
             const response = await axios.post(endpoint, {
                 records,
                 use_rag: useRag,

@@ -4,5 +4,6 @@ venv/
 .streamlit
 .archive/
 frontend-react/src/.archive/
+frontend-react/.env
 LICENSE
 README.md
