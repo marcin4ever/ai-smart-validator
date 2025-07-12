@@ -15,7 +15,7 @@ AI Smart Validator allows SAP teams to validate logistics data using large langu
 
 - **Validation Modes**
   - **Basic**: Pure LLM reasoning on structured input
-  - **RAG (simplified for demo purposes)**: LLM + context from SAP-specific rules and warehouse documentation (via vector DB)
+  - **RAG** (simplified for demo purposes): LLM + context from SAP-specific rules and warehouse documentation (via vector DB)
 
 - **LLM Output**
   - Status per record (`OK` / `Error`)
