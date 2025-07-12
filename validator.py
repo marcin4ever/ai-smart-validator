@@ -29,7 +29,7 @@ def get_api_key(source: str = ""):
 
     # OS env fallback
     if os.getenv("GROQ_API_KEY"):
-        key_source = "⚠️ Using key from OS environment"
+        key_source = "➤ React client – using default key"
         return os.getenv("GROQ_API_KEY")
 
     # If still not found

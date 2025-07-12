@@ -424,7 +424,7 @@ ${result.llm_reasoning}`;
                                                         : 'border-gray-300 hover:bg-gray-100 hover:shadow-md')
                                                 }
                                             >
-                                                {result.worklisted ? '📋 Worklisted' : '📋 Worklist'}
+                                                {result.worklisted ? '📋 Added to Worklist' : '📋 Worklist'}
                                             </button>
 
                                         </div>
