@@ -72,7 +72,7 @@ function App() {
         setLoading(true);
         try {
             const endpoint = `${import.meta.env.VITE_API_URL}/validate`;
-            console.log('Calling API at:', endpoint);
+
             const response = await axios.post(endpoint, {
                 records,
                 use_rag: useRag,
