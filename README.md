@@ -33,11 +33,12 @@ AI Smart Validator allows SAP teams to validate logistics data using large langu
   - **Email**: Opens a dialog box to send email with auto filled item content.
   - **Feedback**: Allows users to submit feedback used to improve future validations (fine tuning / ML).
   - **Worklist**: Adds the item to the user Worklist for follow-up or escalation (`Added to Worklist`).
+  - **Sync to SAP**: Sends the validated result to SAP backend for update (not connected in demo mode).
 
 ## 📦 Architecture
 
-- **Frontend**: React + Tailwind CSS; deployed to Vercel
-- **Backend**: FastAPI with Groq/Mistral API; hosted on Render and Netlify
+- **Frontend**: React + Tailwind CSS; deployed to Vercel and Netlify
+- **Backend**: FastAPI with Groq/Mistral API; hosted on Render 
 - **Data Flow**: JSON input → LLM Reasoning → Results rendered per record
 - **RAG Engine**: Vector-based Retrieval-Augmented Generation using ChromaDB  
 
