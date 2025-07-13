@@ -31,6 +31,8 @@ function App() {
     const [feedbackText, setFeedbackText] = useState<string>('');
     const [temperature, setTemperature] = useState<number>(0.7);
     const [advancedTemp, setAdvancedTemp] = useState<boolean>(false);
+    const [lastRun, setLastRun] = useState<boolean | null>(null);
+    const [isValidating, setIsValidating] = useState(false);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -70,6 +72,7 @@ function App() {
 
     const runValidation = async (useRag: boolean) => {
         setLoading(true);
+        setIsValidating(true); // disable buttons
         try {
             const endpoint = `${import.meta.env.VITE_API_URL}/validate`;
 
@@ -79,6 +82,7 @@ function App() {
                 temperature: temperature,
                 source: "react"
             });
+
             const resData = response.data;
 
             const resultsWithMarked = resData.results.map((r: any) => ({
@@ -107,8 +111,10 @@ function App() {
             console.error('Validation failed:', error);
         } finally {
             setLoading(false);
+            setIsValidating(false); // re-enable buttons
         }
     };
+
 
     const toggleMarked = (recordId: number) => {
         setResults((prevResults) =>
@@ -277,14 +283,19 @@ ${result.llm_reasoning}`;
                         setTemperature={setTemperature}
                         advancedTemp={advancedTemp}
                         setAdvancedTemp={setAdvancedTemp}
+                        lastRun={lastRun}
+                        setLastRun={setLastRun}
+                        isValidating={isValidating}
                     />
 
                     {loading && (
-                        <div className="flex flex-col items-center mt-4 text-gray-700">
-                            <ClipLoader size={24} color="#2563EB" />
-                            <span className="mt-2">Validating...</span>
+                        <div className="fixed inset-0 z-50 bg-white/60 backdrop-blur-sm flex flex-col items-center justify-center text-gray-700">
+                            <ClipLoader size={36} color="#2563EB" />
+                            <span className="mt-4 text-lg font-semibold">Validating...</span>
                         </div>
                     )}
+
+
 
                     {!loading && results.length > 0 && (
                         <div className="mt-6">
@@ -425,6 +436,12 @@ ${result.llm_reasoning}`;
                                                 }
                                             >
                                                 {result.worklisted ? '📋 Added to Worklist' : '📋 Worklist'}
+                                            </button>
+                                            <button
+                                                disabled
+                                                className="flex items-center gap-1 px-2 py-1 border border-gray-300 rounded-lg shadow text-sm bg-gray-200 text-gray-500 cursor-not-allowed"
+                                            >
+                                                📤 Sync to SAP
                                             </button>
 
                                         </div>

@@ -7,9 +7,22 @@ interface RunControlsProps {
     setTemperature: React.Dispatch<React.SetStateAction<number>>;
     advancedTemp: boolean;
     setAdvancedTemp: React.Dispatch<React.SetStateAction<boolean>>;
+    lastRun: boolean | null;
+    setLastRun: React.Dispatch<React.SetStateAction<boolean | null>>;
+    isValidating: boolean;
 }
 
-const RunControls: React.FC<RunControlsProps> = ({ records, runValidation, temperature, setTemperature, advancedTemp, setAdvancedTemp }) => {
+const RunControls: React.FC<RunControlsProps> = ({
+    records,
+    runValidation,
+    temperature,
+    setTemperature,
+    advancedTemp,
+    setAdvancedTemp,
+    lastRun,
+    setLastRun,
+    isValidating,
+}) => {
 
     if (records.length === 0) return null;
 
@@ -55,18 +68,31 @@ const RunControls: React.FC<RunControlsProps> = ({ records, runValidation, tempe
 
             <div className="flex gap-4 mb-4 max-w-[480px] mx-auto">
                 <button
-                    onClick={() => runValidation(false)}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-xl transition duration-200 shadow-md"
+                    onClick={() => {
+                        setLastRun(false);
+                        runValidation(false);
+                    }}
+                    disabled={isValidating}
+                    className={`flex-1 font-bold py-2 px-4 rounded-xl transition duration-150
+  text-white scale-100 transform
+  ${isValidating ? "bg-gray-400 cursor-not-allowed" : lastRun === false ? "bg-blue-800 shadow-inner" : "bg-blue-600 hover:bg-blue-700 shadow-md"}`}
                 >
                     Run Validation
                 </button>
 
                 <button
-                    onClick={() => runValidation(true)}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-xl transition duration-200 shadow-md"
+                    onClick={() => {
+                        setLastRun(false);
+                        runValidation(false);
+                    }}
+                    disabled={isValidating}
+                    className={`flex-1 font-bold py-2 px-4 rounded-xl transition duration-150
+  text-white scale-100 transform
+  ${isValidating ? "bg-gray-400 cursor-not-allowed" : lastRun === false ? "bg-blue-800 shadow-inner" : "bg-blue-600 hover:bg-blue-700 shadow-md"}`}
                 >
-                    Run with RAG WM Rules
+                    Run Validation
                 </button>
+
             </div>
         </>
     );
