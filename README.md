@@ -38,7 +38,7 @@ AI Smart Validator allows SAP teams to validate logistics data using large langu
 ## 📦 Architecture
 
 - **Frontend**: React + Tailwind CSS; deployed to Vercel and Netlify
-- **Backend**: FastAPI with Groq/Mistral API; hosted on Render 
+- **Backend**: FastAPI (Uvicorn) with Groq (LLaMA 3 / Mistral); hosted on Render 
 - **Data Flow**: JSON input → LLM Reasoning → Results rendered per record
 - **RAG Engine**: Vector-based Retrieval-Augmented Generation using ChromaDB  
 
